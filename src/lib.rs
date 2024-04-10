@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
+#![no_std]
 
+#![feature(ip_in_core)]
 pub extern crate byteorder;
 pub extern crate paste;
+extern crate alloc;
 
 #[macro_use]
 mod macros;

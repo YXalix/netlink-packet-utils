@@ -2,7 +2,8 @@
 
 use core::ops::Range;
 
-use anyhow::Context;
+use alloc::vec::Vec;
+use axerrno::AxError;
 use byteorder::{ByteOrder, NativeEndian};
 
 use crate::{
@@ -54,32 +55,18 @@ impl<T: AsRef<[u8]>> NlaBuffer<T> {
 
     pub fn new_checked(buffer: T) -> Result<NlaBuffer<T>, DecodeError> {
         let buffer = Self::new(buffer);
-        buffer.check_buffer_length().context("invalid NLA buffer")?;
+        buffer.check_buffer_length()?;
         Ok(buffer)
     }
 
     pub fn check_buffer_length(&self) -> Result<(), DecodeError> {
         let len = self.buffer.as_ref().len();
         if len < TYPE.end {
-            Err(format!(
-                "buffer has length {}, but an NLA header is {} bytes",
-                len, TYPE.end
-            )
-            .into())
+            Err(AxError::InvalidInput)
         } else if len < self.length() as usize {
-            Err(format!(
-                "buffer has length: {}, but the NLA is {} bytes",
-                len,
-                self.length()
-            )
-            .into())
+            Err(AxError::InvalidInput)
         } else if (self.length() as usize) < TYPE.end {
-            Err(format!(
-                "NLA has invalid length: {} (should be at least {} bytes",
-                self.length(),
-                TYPE.end,
-            )
-            .into())
+            Err(AxError::InvalidInput)
         } else {
             Ok(())
         }
@@ -339,6 +326,8 @@ impl<'buffer, T: AsRef<[u8]> + ?Sized + 'buffer> Iterator
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec;
+
     use super::*;
 
     #[test]
